@@ -1,0 +1,12 @@
+LIBRARY      "RunApp"
+
+EXPORTS
+	DllRegisterServer PRIVATE
+	ExtraParameters PRIVATE
+	editParameters PRIVATE
+	runRunApp
+	GetParamPathList PRIVATE
+	SetParamPathList PRIVATE
+	SignalTerminating PRIVATE
+	isModuleTemplatized PRIVATE
+	getSuffix PRIVATE

@@ -1,0 +1,46 @@
+#Ignore any folder except [application, debug, forms, headers, sources]
+/**/
+!/application/
+!/debug/
+!/forms/
+!/headers/
+!/release/
+!/sources/
+/*.*
+!/*.def
+!/*.pro
+!/*.vcxproj
+!/README.md
+!.gitignore
+!runapp_gui.png
+
+#Ignore any in ./application/ except folders [bin, radexproAPI]
+#and .py files and install.bat
+/application/**/
+/application/**/*.*
+!/application/bin/
+!/application/radexproAPI/
+!/application/**/*.py
+!/application/install.bat
+
+#Ignore any in ./debug/ and ./release/
+/debug/**/
+/debug/**/*.*
+/release/**/
+/release/**/*.*
+
+#Ignore any in /froms/ except *.ui
+/forms/**/
+/forms/**/*
+!/forms/*.ui
+
+#Ignore any in /haeders/ except *.h
+/haeders/**/
+/haeders/**/*.*
+!/haeders/*.h
+
+#Ignore any in /sources/ except *.cpp
+/sources/**/
+/sources/**/*.*
+!/sources/*.cpp
+
