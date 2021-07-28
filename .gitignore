@@ -22,6 +22,7 @@
 !/application/radexproAPI/
 !/application/**/*.py
 !/application/install.bat
+!/application/README.md
 
 #Ignore any in ./debug/ and ./release/
 /debug/**/
