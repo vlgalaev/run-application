@@ -32,11 +32,16 @@ public:
 	const QString& getApplicationName() const;
 	void setApplicationName(const QString &ApplicationName);
 
+	const QString& getApplicationParameters() const;
+	void setApplicationParameters(const QString &ApplicationParameters);
+
 private:
 	static const ParamStructVersionType m_first_version = ParamStructVersion<28, 7, 2020>::value;
 	static const ParamStructVersionType m_current_version = RunAppParameters::m_first_version;
 
-	QString ApplicationName;
+	QString ApplicationName = "";
+	QString ApplicationParameters = "";
+
 };
 
 // ---------- Implementation ----------

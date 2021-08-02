@@ -6,7 +6,6 @@
 
 #include <QCoreApplication>
 
-
 struct COMMON_PARAM;
 
 class QString;
@@ -75,6 +74,13 @@ public:
 
 	void toFile(std::ofstream&, std::ofstream&, std::ofstream&);
 	static SDataset fromFile(std::ifstream&, std::ifstream&);
+};
+
+class ParametersString : public QString
+{
+public:
+	ParametersString(const QString&);
+	QString format();
 };
 
 // ----- Implementation -----

@@ -6,18 +6,18 @@
 !/headers/
 !/release/
 !/sources/
-/*.*
+!/doc/
+/**.*
 !/*.def
 !/*.pro
 !/*.vcxproj
 !/README.md
 !.gitignore
-!runapp_gui.png
 
 #Ignore any in ./application/ except folders [bin, radexproAPI]
 #and .py files and install.bat
 /application/**/
-/application/**/*.*
+/application/**.*
 !/application/bin/
 !/application/radexproAPI/
 !/application/**/*.py
@@ -26,22 +26,26 @@
 
 #Ignore any in ./debug/ and ./release/
 /debug/**/
-/debug/**/*.*
+/debug/**.*
 /release/**/
-/release/**/*.*
+/release/**.*
 
 #Ignore any in /froms/ except *.ui
 /forms/**/
-/forms/**/*
+/forms/**.*
 !/forms/*.ui
 
 #Ignore any in /haeders/ except *.h
 /haeders/**/
-/haeders/**/*.*
+/haeders/**.*
 !/haeders/*.h
 
 #Ignore any in /sources/ except *.cpp
 /sources/**/
-/sources/**/*.*
+/sources/**.*
 !/sources/*.cpp
 
+#Ignore any in /doc/ except runapp_gui.png
+/doc/**/
+/doc/**.*
+!/doc/runapp_gui.png

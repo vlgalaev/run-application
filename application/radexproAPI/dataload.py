@@ -1,6 +1,6 @@
 import struct
 import numpy as np
-
+import re
 
 def load_traces(filename='traces'):
     with open(filename, 'rb') as file:
@@ -36,3 +36,14 @@ def get_headerID(headerName, headerNames=None):
     if headerName not in headerNames:
         raise ValueError(f"The passed header name ({headerName}) doesn't exist.")
     return np.arange(len(headerNames))[headerNames == headerName][0]
+  
+  
+def get_arguments(appArgv=[]):
+    params = {}
+    pattern = r"-{2}([A-Za-z_]+\w*)\s*=\s*(\w+)"
+    for arg in appArgv[1:]:
+        match = re.fullmatch(pattern, arg.strip())
+        if match is not None:
+            params[match.group(1)] = match.group(2)
+    return params
+    

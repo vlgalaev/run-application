@@ -14,11 +14,14 @@ RunAppParametersDialog::RunAppParametersDialog (const EXTRA_PARAM &extra_paramet
 	auto &ui = this->ui();
 	ui.setupUi(this);
 
+	m_highlighter = new QRegexHighligher(this);
+
 	initializeChildControls();
 }
 
 RunAppParametersDialog::~RunAppParametersDialog ()
 {
+	delete m_highlighter;
 	// (Ui::RunAppParametersDialog class is incomplete in .h)
 }
 
@@ -30,7 +33,13 @@ void RunAppParametersDialog::initializeChildControls ()
 		this, &RunAppParametersDialog::setApplicationName);
 	ASSERTED_CONNECT(ui.lineEdit_ApplicationName, &QLineEdit::textEdited,
 		this, &RunAppParametersDialog::editApplicationName);
+	ASSERTED_CONNECT(ui.plainTextEdit_AppParams, &QPlainTextEdit::textChanged,
+		this, &RunAppParametersDialog::editApplicationParameters);
 
+	ui.plainTextEdit_AppParams->setPlaceholderText(
+		"Type here the application parameters the same like the following: --key=value");
+	m_highlighter->setDocument(ui.plainTextEdit_AppParams->document());
+	
 	Q_UNUSED(ui);
 }
 
@@ -41,6 +50,7 @@ void RunAppParametersDialog::setParameters (const RunAppParameters &parameters)
 	m_parameters = parameters;
 
 	ui.lineEdit_ApplicationName->setText(m_parameters.getApplicationName());
+	ui.plainTextEdit_AppParams->setPlainText(m_parameters.getApplicationParameters());
 	// set new values to child controls
 	// do smth
 
@@ -71,4 +81,31 @@ void RunAppParametersDialog::setApplicationName()
 void RunAppParametersDialog::editApplicationName(const QString& ApplicationName)
 {
 	m_parameters.setApplicationName(ApplicationName);
+}
+
+void RunAppParametersDialog::editApplicationParameters()
+{
+	m_parameters.setApplicationParameters(this->ui().plainTextEdit_AppParams->toPlainText());
+}
+
+QRegexHighligher::QRegexHighligher(QObject *parent) : QSyntaxHighlighter(parent)
+{
+	_regex = QRegExp("(\\s|^)-{2}([A-Za-z_]+\\w*)\\s*=\\s*((\\{@\\w+\\})|(\\w+))(\\s|$)");
+	_format = QTextCharFormat();
+	_format.setForeground(QColor(0,127,76,204));
+	_format.setFontWeight(QFont::Bold);
+}
+
+void QRegexHighligher::highlightBlock(const QString &text)
+{
+	QRegExp whitespace("\\s");
+	int index = _regex.indexIn(text);
+	while (index >= 0)
+	{
+		int length = _regex.matchedLength();
+		setFormat(index, length, _format);
+		if (whitespace.exactMatch(text[index + length - 1]))
+			index--;
+		index = _regex.indexIn(text, index + length);
+	}
 }

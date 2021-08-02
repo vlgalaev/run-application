@@ -65,7 +65,11 @@ void RunAppModule::processFrame(COMMON_PARAM &cp)
 	dataset_mask_processor.processString("*", &dataset_list);
 	file_mask_processor.processString("*.*", &files_list);
 
+	
 	QString applicationName = m_parameters.getApplicationName();
+	ParametersString params(m_parameters.getApplicationParameters());
+	applicationName += static_cast<QString>(params.format());
+	cp.pLog->Log("Run Process command", applicationName.toStdString().c_str(), MessageType::Report);
 	std::wstring applicationName_wstring = applicationName.toStdWString();
 	std::vector<wchar_t> applicationName_wcharar(applicationName_wstring.begin(),
 		applicationName_wstring.end());
@@ -134,11 +138,19 @@ void RunAppModule::processFrame(COMMON_PARAM &cp)
 	GetExitCodeProcess(pi.hProcess, &exit_code);
 	if (exit_code == 1)
 		throw std::exception((
-			"Unable to read the app parameters from file or read/write rdx dataset swap files. Exit code is: " +
+			"Unable to read or write rdx dataset swap files. Exit code is: " +
 			std::to_string(exit_code)).c_str());
 	if (exit_code == 2)
 		throw std::exception((
 			"Not enought memory. Exit code is: " +
+			std::to_string(exit_code)).c_str());
+	if (exit_code == 3)
+		throw std::exception((
+			"Error while parsing the parameters string. Exit code is: " +
+			std::to_string(exit_code)).c_str());
+	if (exit_code == 4)
+		throw std::exception((
+			"Not enought parameters. Exit code is: " +
 			std::to_string(exit_code)).c_str());
 	if (exit_code == 101)
 		throw std::exception((
@@ -212,6 +224,15 @@ void RunAppModule::substituteReplicaInTemplatizedParameter(COMMON_PARAM &cp)
 		throw Util::Exception(tr("%1 replica variable substitution failed").arg(getTitle()));
 	else if (substitution_status == ReplicaExpr::Validity::Valid)
 		m_parameters.setApplicationName(substituted_string);
+
+
+	substitution_status =
+		replica_substitutor.substitute("Application Parameters"_latin1,
+			ParametersString(m_parameters.getApplicationParameters()).format(), &substituted_string);
+	if (substitution_status == ReplicaExpr::Validity::Invalid)
+		throw Util::Exception(tr("%1 replica variable substitution failed").arg(getTitle()));
+	else if (substitution_status == ReplicaExpr::Validity::Valid)
+		m_parameters.setApplicationParameters(substituted_string);
 }
 
 SDataset SDataset::fromFlow(COMMON_PARAM& cp, unsigned int traceCount, unsigned int sampleCount, unsigned int headerCount)
@@ -427,4 +448,47 @@ void SDataset::toFlow(COMMON_PARAM &cp)
 		tr.h = m_headers + i * m_headerCount;
 		cp.TraceOutput(stream_id, &tr);
 	}
+}
+
+ParametersString::ParametersString(const QString& text) : QString(text)
+{
+}
+
+QString ParametersString::format() {
+	QRegExp regex("(\\s|^)-{2}([A-Za-z_]+\\w*)\\s*=\\s*((\\{@\\w+\\})|(\\w+))(\\s|$)");
+	QRegExp whitespace("\\s");
+	QRegExp equal("\\s*=\\s*");
+
+	QString formatedStr = "";
+	QString tmp;
+	int p = 0, q = 0;
+	int length = 0;
+	int index = regex.indexIn(*this);
+	while (index >= 0)
+	{
+		length = regex.matchedLength();
+		tmp = this->mid(index, length);
+		for (int i = 0; i < tmp.length(); i++)
+		{
+			if (!whitespace.exactMatch(*(tmp.begin() + i)))
+			{
+				p = i;
+				break;
+			}
+		}
+		for (int i = tmp.length() - 1; i >= 0; i--)
+		{
+			if (!whitespace.exactMatch(*(tmp.begin() + i)))
+			{
+				q = i;
+				break;
+			}
+		}
+		formatedStr += " " + tmp.mid(p, q - p + 1).replace(equal,"=");
+		//formatedStr += " " + this->mid(index, length).replace(whitespace, "");
+		if (whitespace.exactMatch(*(this->begin() + index + length - 1)))
+			index--;
+		index = regex.indexIn(*this, index + length);
+	}
+	return formatedStr;
 }

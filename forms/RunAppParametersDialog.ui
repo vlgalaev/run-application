@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>688</width>
-    <height>89</height>
+    <height>250</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -28,7 +28,7 @@
   <property name="maximumSize">
    <size>
     <width>16777215</width>
-    <height>89</height>
+    <height>250</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -97,6 +97,9 @@
       </widget>
      </item>
     </layout>
+   </item>
+   <item>
+    <widget class="QPlainTextEdit" name="plainTextEdit_AppParams"/>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">

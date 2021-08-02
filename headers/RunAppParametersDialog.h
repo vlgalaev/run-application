@@ -7,10 +7,18 @@
 
 #include <QDialog>
 #include <QFileDialog>
+#include <qsyntaxhighlighter.h>
+#include <QTextCharFormat>
+#include <qregexp.h>
+
 
 #include <memory>
 
+
+
 namespace Ui { class RunAppParametersDialog; }
+
+class QRegexHighligher;
 
 class RunAppParametersDialog : public QDialog
 {
@@ -27,6 +35,7 @@ public slots:
 	void accept () override;
 	void setApplicationName();
 	void editApplicationName(const QString&);
+	void editApplicationParameters();
 
 private:
 	inline Ui::RunAppParametersDialog& ui () const noexcept;
@@ -38,6 +47,22 @@ private:
 
 	RunAppParameters m_parameters;
 	const EXTRA_PARAM m_extra_parameters;
+
+	QRegexHighligher *m_highlighter;
+};
+
+
+class QRegexHighligher : public QSyntaxHighlighter
+{
+	Q_OBJECT
+
+private:
+	QTextCharFormat _format;
+	QRegExp _regex;
+public:
+	explicit  QRegexHighligher(QObject *parent = 0);
+
+	void highlightBlock(const QString &text);
 };
 
 // ---------- Implementation ----------

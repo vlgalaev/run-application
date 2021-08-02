@@ -9,13 +9,11 @@ It allows you to execute any Windows application developed with radexproAPI.
 The module is able to embed to RadExPro. It is able to run in flow 
 with replicas. It is implemented as a DLL.
 The picture below shows the module graphical user interface.
-![picture](runapp_gui.png "Run Application User Interface")
+![picture](./doc/runapp_gui.png "Run Application User Interface")
 It allows you to choose the executabele with Open File Dialog by clicking
-the  "Browse..." button.
-
-
-### Params meaning:
-**Application** - the absolute path to the executable or replica expression.
+the  "Browse..." button. Also you can pass parameters to the executable
+by typing key-value pairs according to the following: --key=value. Only
+key-value pairs highlighted in green will be passed. 
 
 
 ## Dependencies
@@ -57,13 +55,16 @@ and enter the following instructions one by one:
 the rest...
 
 ### Installing
-1. Go to the `\path-to-RadExPro\` in Windows Explorer.
-2. Execute the following instruction with Command prompt:
+
+1. Check that RunApp.dll is at \path-to-RadExPro\
+2. Run command prompt at `\path-to-RadExPro\`.
+3. Execute the following instruction:
 `regsvr32 .\RunApp.dll`
-3. Done
+4. Done
 
 ## Executing the application
 
 1. Put the module into RadExPro flow.
-2. Assign the module parameter.
-3. Run the RadExPro flow.
+2. Choose the application to run.
+3. Type the application parameters to the parameters field,
+4. Run the RadExPro flow.

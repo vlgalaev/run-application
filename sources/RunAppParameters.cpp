@@ -1,5 +1,6 @@
 #include "RunAppParameters.h"
 #include "RunAppParametersDialog.h"
+#include "RunAppModule.h"
 
 #include "Debug/Assert.h"
 #include "Exec.h"
@@ -19,6 +20,7 @@ QByteArray RunAppParameters::pack () const
 
 	data_stream << RunAppParameters::getCurrentVersion();
 	data_stream << RunAppParameters::ApplicationName;
+	data_stream << RunAppParameters::ApplicationParameters;
 
 	Q_ASSERT(result.size() <= PARAMBUFSIZE); // if this fires, then you should implement compressed packing
 
@@ -44,6 +46,7 @@ std::size_t RunAppParameters::unpackFrom (const void *p_raw_bytes, const std::si
 	if (version != RunAppParameters::m_current_version)	// this means older version of parameters
 		return 0u;											// process the case instead of returning zero
 	data_stream >> RunAppParameters::ApplicationName;
+	data_stream >> RunAppParameters::ApplicationParameters;
 
 	return static_cast<std::size_t>(data_stream.device()->pos());
 }
@@ -55,9 +58,11 @@ QString RunAppParameters::makeLogText (const QChar line_separator) const
 	// Note: use "RunAppModule::tr()" or "RunAppParametersDialog::tr()" context to translate parameters
 	using Dialog = RunAppParametersDialog;
 
-	QString log_text = u'\t' % Dialog::tr("ApplicationName") % u": " % QString(RunAppParameters::getApplicationName());
-		//u'\t' % Dialog::tr("_Parameter_1_name_") % u": " % QString("_parameter_1_value_") % line_separator %
-		//u'\t' % Dialog::tr("_Parameter_2_name_") % u": " % QString("_parameter_2_value_");
+	ParametersString params(RunAppParameters::getApplicationParameters());
+
+	QString log_text = u'\t' % Dialog::tr("ApplicationName") % u": " % QString(RunAppParameters::getApplicationName()) % line_separator %
+		u'\t' % Dialog::tr("ApplicationParameters") % u": " % QString(static_cast<QString>(params.format()));
+		
 
 	return log_text;
 }
@@ -70,4 +75,14 @@ const QString& RunAppParameters::getApplicationName() const
 void RunAppParameters::setApplicationName(const QString &ApplicationName)
 {
 	this->ApplicationName = ApplicationName;
+}
+
+const QString& RunAppParameters::getApplicationParameters() const
+{
+	return ApplicationParameters;
+}
+
+void RunAppParameters::setApplicationParameters(const QString &ApplicationParameters)
+{
+	this->ApplicationParameters = ApplicationParameters;
 }

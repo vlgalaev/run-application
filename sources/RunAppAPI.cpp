@@ -251,5 +251,13 @@ int RDX_MODULE_CALL isModuleTemplatized (const char *p_packed_parameters)
 	auto parameters_ptr = unpackModuleParameters<RunAppParameters>(p_packed_parameters, PARAMBUFSIZE);
 	ASSERT_NOTNULL(parameters_ptr);
 
-	return ReplicaExpr::checkIfExprListHasVariable({ parameters_ptr->getApplicationName() }) ? 1 : 0;
+	
+
+	bool isTemplatized = false;
+	if (ReplicaExpr::checkIfExprListHasVariable({ parameters_ptr->getApplicationName() }) |
+		ReplicaExpr::checkIfExprListHasVariable({ ParametersString(
+			parameters_ptr->getApplicationParameters()).format() }))
+		isTemplatized = true;
+
+	return isTemplatized;
 }
