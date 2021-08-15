@@ -11,12 +11,15 @@ include(../../COMMON/Module.pri)
 HEADERS = headers/RunAppAPI.h \
           headers/RunAppModule.h \
           headers/RunAppParameters.h \
-          headers/RunAppParametersDialog.h
+          headers/RunAppParametersDialog.h \
+		  headers/AppProcess.h
+
 
 SOURCES = sources/RunAppAPI.cpp \
           sources/RunAppModule.cpp \
           sources/RunAppParameters.cpp \
-          sources/RunAppParametersDialog.cpp
+          sources/RunAppParametersDialog.cpp \
+		  sources/AppProcess.cpp
 
 FORMS = forms/RunAppParametersDialog.ui
 

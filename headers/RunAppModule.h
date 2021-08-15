@@ -1,16 +1,43 @@
 #pragma once
 
 #include "RunAppParameters.h"
+#include "AppProcess.h"
+#include <fstream>
 
 #include "ReLogManager/ReLoggingClass.h"
 
 #include <QCoreApplication>
+
+namespace sfs = std::filesystem;
 
 struct COMMON_PARAM;
 
 class QString;
 
 class SDataset;
+
+class Swap {
+public:
+	sfs::path _storageDir;
+	std::string _tracesIO_fn;
+	std::string _headersIO_fn;
+	std::string _headerNamesO_fn;
+
+	std::fstream _tracesInput;
+	std::fstream _headersInput;
+	std::fstream _tracesOutput;
+	std::fstream _headersOutput;
+	std::fstream _headerNamesOutput;
+
+protected:
+	Swap(sfs::path storage_dir = sfs::path());
+
+	void open_in();
+	void open_out();
+	void close_in();
+	void close_out();
+
+};
 
 class RunAppModule : public ReLoggingClass
 {
@@ -44,36 +71,35 @@ private:
 
 private:
 	RunAppParameters m_parameters;
+
 };
 
-class SDataset
+class SDataset : public Swap
 {
-private:
-	unsigned int m_traceCount;
-	unsigned int m_sampleCount;
-	unsigned int m_headerCount;
+public:
+	unsigned int _traceCount;
+	unsigned int _sampleCount;
+	unsigned int _headerCount;
 
-	std::vector<std::string> m_headerNames;
-	float *m_traces;
-	double *m_headers;
-
-private:
-	template<typename T>
-	inline static T* memoryAlloc(unsigned int count);
+	std::vector<std::string> _headerNames;
+	std::vector<float> _traces;
+	std::vector<double> _headers;
 
 public:
-	SDataset(unsigned int traceCount=0, unsigned int sampleCount=0, unsigned int headerCount=0); // Default Constructor
-	SDataset(const SDataset& other); // Copy constructor
-	SDataset(SDataset&& other) noexcept; // Move constructor
-	SDataset& operator=(const SDataset& other); // Copy assigment operator
-	SDataset& operator=(SDataset&& other) noexcept; // Move assigment operator
-	~SDataset(); // Destructor
+	SDataset(unsigned int traceCount=0, unsigned int sampleCount=0, unsigned int headerCount=0,
+		sfs::path storage_dir = sfs::path());
+	SDataset(sfs::path storageDir);
+
+	sfs::path getcwd();
 
 	void toFlow(COMMON_PARAM &cp);
-	static SDataset fromFlow(COMMON_PARAM &cp, unsigned int traceCount=0, unsigned int sampleCount=0, unsigned int headerCount=0);
+	static SDataset fromFlow(COMMON_PARAM &cp, unsigned int traceCount=0, unsigned int sampleCount=0,
+		unsigned int headerCount=0, sfs::path storageDir = sfs::current_path() / "tmp");
 
-	void toFile(std::ofstream&, std::ofstream&, std::ofstream&);
-	static SDataset fromFile(std::ifstream&, std::ifstream&);
+	void toFile();
+	static SDataset fromFile(sfs::path storageDir = sfs::current_path() / "tmp");
+
+	void clearSwap();
 };
 
 class ParametersString : public QString
@@ -88,15 +114,4 @@ public:
 bool RunAppModule::areParametersValid () const
 {
 	return RunAppModule::validateParameters(m_parameters);
-}
-
-template<typename T>
-T* SDataset::memoryAlloc(unsigned int count)
-{
-	T *ptr = nullptr;
-	if (count == 0)
-		return ptr;
-	else
-		ptr = new T[count]();
-	return ptr;
 }

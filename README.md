@@ -10,10 +10,11 @@ The module is able to embed to RadExPro. It is able to run in flow
 with replicas. It is implemented as a DLL.
 The picture below shows the module graphical user interface.
 ![picture](./doc/runapp_gui.png "Run Application User Interface")
-It allows you to choose the executabele with Open File Dialog by clicking
+It allows you to choose the executable with Open File Dialog by clicking
 the  "Browse..." button. Also you can pass parameters to the executable
-by typing key-value pairs according to the following: --key=value. Only
-key-value pairs highlighted in green will be passed. 
+by typing key-value pairs according to the following: --key=value.
+Only key-value pairs highlighted in green will be passed.
+You can use replicas to determine the application or the value of a parameter.
 
 
 ## Dependencies
@@ -66,5 +67,5 @@ the rest...
 
 1. Put the module into RadExPro flow.
 2. Choose the application to run.
-3. Type the application parameters to the parameters field,
+3. Type the application parameters to the parameters field.
 4. Run the RadExPro flow.

@@ -13,7 +13,7 @@ REM TODO: install dependencies
 
 REM setting up environment variables locally
 setlocal
-PYTHONPATH = .\bin;.\radexporAPI
+PYTHONPATH = .\bin;.\radexproAPI
 REM TODO: add new catalogs if it is needed
 endlocal
 

@@ -60,8 +60,11 @@ QString RunAppParameters::makeLogText (const QChar line_separator) const
 
 	ParametersString params(RunAppParameters::getApplicationParameters());
 
-	QString log_text = u'\t' % Dialog::tr("ApplicationName") % u": " % QString(RunAppParameters::getApplicationName()) % line_separator %
-		u'\t' % Dialog::tr("ApplicationParameters") % u": " % QString(static_cast<QString>(params.format()));
+	QString log_text = 
+		u'\t' % Dialog::tr("ApplicationName") % u": " %
+		QString(RunAppParameters::getApplicationName()) % line_separator %
+		u'\t' % Dialog::tr("ApplicationParameters") % u": " % 
+		QString(static_cast<QString>(params.format()));
 		
 
 	return log_text;

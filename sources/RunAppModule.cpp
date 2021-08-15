@@ -10,14 +10,16 @@
 #include "ReStrConvert.h"
 
 #include <QStringBuilder>
+#include <qprocess.h>
 
 #include <fstream>
 #include <exception>
-
 #include <filesystem>
+
+#include "AppProcess.h"
+
+
 namespace sfs = std::filesystem;
-
-
 
 class RunAppException : std::exception
 {
@@ -59,152 +61,34 @@ void RunAppModule::processFrame(COMMON_PARAM &cp)
 	QStringList files_list;
 	QStringList dataset_list;
 
-	DatasetMaskProcessor dataset_mask_processor(QLatin1String("DatasetMaskProcessor - name for logging"), cp.pLog, cp.dh);
+	DatasetMaskProcessor dataset_mask_processor(QLatin1String("DatasetMaskProcessor - name for logging"),
+												cp.pLog, cp.dh);
 	FileMaskProcessor file_mask_processor(QLatin1String("FileMaskProcessor - name for logging"), cp.pLog);
 
 	dataset_mask_processor.processString("*", &dataset_list);
 	file_mask_processor.processString("*.*", &files_list);
 
+	sfs::path applicationName(m_parameters.getApplicationName().toStdString());
+	ParametersString parameters = ParametersString(m_parameters.getApplicationParameters()).format();
+
+	SDataset sdataset = SDataset::fromFlow(cp);
+	sdataset.toFile();
+
+	AppProcess application = AppProcess(sdataset.getcwd(), applicationName, parameters);
+	QObject::connect(&application, &AppProcess::report, [&cp](const QString& message) {
+		cp.pLog->Log("Application Report", message.toStdString().c_str());
+	});
+	QObject::connect(&application, &AppProcess::stdError, [&cp](const QString& message) {
+		if (!message.isEmpty())
+			cp.pLog->Log("Application Errors", message.toStdString().c_str());
+	});
+	application.startApp();
 	
-	QString applicationName = m_parameters.getApplicationName();
-	ParametersString params(m_parameters.getApplicationParameters());
-	applicationName += static_cast<QString>(params.format());
-	cp.pLog->Log("Run Process command", applicationName.toStdString().c_str(), MessageType::Report);
-	std::wstring applicationName_wstring = applicationName.toStdWString();
-	std::vector<wchar_t> applicationName_wcharar(applicationName_wstring.begin(),
-		applicationName_wstring.end());
-	applicationName_wcharar.push_back('\0');
-	sfs::path applicationAbsName = sfs::path(applicationName_wstring).make_preferred();
-	std::string traceFileName = (applicationAbsName.parent_path() / "traces").string();
-	std::string headerFileName = (applicationAbsName.parent_path() / "headers").string();
-	std::string headerNamesFileName = (applicationAbsName.parent_path() / "headerNames.txt").string();
+	sdataset = SDataset::fromFile();
 
-
-	//***** Write amplitudes and headers to file
-	SDataset sdataset(SDataset::fromFlow(cp));
-	std::ofstream traceOutput(traceFileName, std::ios::binary);
-	std::ofstream headerOutput(headerFileName, std::ios::binary);
-	std::ofstream headerNamesOutput(headerNamesFileName);
-
-	if (traceOutput && headerOutput && headerNamesOutput)
-	{
-		sdataset.toFile(traceOutput, headerOutput, headerNamesOutput);
-		traceOutput.close();
-		headerOutput.close();
-		headerNamesOutput.close();
-	}
-	else if (traceOutput.is_open())
-		traceOutput.close();
-	else if (headerOutput.is_open())
-		headerOutput.close();
-	else if (headerNamesOutput.is_open())
-		headerNamesOutput.close();
-
-	//***** Execute the application
-	STARTUPINFO si;
-	PROCESS_INFORMATION pi;
-
-	ZeroMemory(&si, sizeof(si));
-	si.cb = sizeof(si);
-	ZeroMemory(&pi, sizeof(pi));
-
-	if (!CreateProcess(NULL, // No module name (use command line)
-		&applicationName_wcharar[0],        // Command line
-		NULL,           // Process handle not inheritable
-		NULL,           // Thread handle not inheritable
-		FALSE,          // Set handle inheritance to FALSE
-		0,              // No creation flags
-		NULL,           // Use parent's environment block
-		applicationAbsName.parent_path().c_str(),           // Use parent's starting directory 
-		&si,            // Pointer to STARTUPINFO structure
-		&pi)           // Pointer to PROCESS_INFORMATION structure
-		)
-	{
-		unsigned long error_code = GetLastError();
-		if (error_code == ERROR_ACCESS_DENIED)
-			throw std::exception(("Access is denied. Error code is: " + std::to_string(GetLastError())).c_str());
-		else if (error_code == ERROR_FILE_NOT_FOUND)
-			throw std::exception(("File not found. Error code is: " + std::to_string(GetLastError())).c_str());
-		else
-			throw std::exception(("The application execution error code is: " + std::to_string(GetLastError())).c_str());
-	}
-
-
-	// Wait until child process exits.
-	WaitForSingleObject(pi.hProcess, INFINITE);
-
-
-	unsigned long exit_code = 0;
-	GetExitCodeProcess(pi.hProcess, &exit_code);
-	if (exit_code == 1)
-		throw std::exception((
-			"Unable to read or write rdx dataset swap files. Exit code is: " +
-			std::to_string(exit_code)).c_str());
-	if (exit_code == 2)
-		throw std::exception((
-			"Not enought memory. Exit code is: " +
-			std::to_string(exit_code)).c_str());
-	if (exit_code == 3)
-		throw std::exception((
-			"Error while parsing the parameters string. Exit code is: " +
-			std::to_string(exit_code)).c_str());
-	if (exit_code == 4)
-		throw std::exception((
-			"Not enought parameters. Exit code is: " +
-			std::to_string(exit_code)).c_str());
-	if (exit_code == 101)
-		throw std::exception((
-			"The content of the parameters file is invalid. Exit code is: " +
-			std::to_string(exit_code)).c_str());
-	if (exit_code == 102)
-		throw std::exception((
-			"Unknown exception during the calculations. Exit code is: " +
-			std::to_string(exit_code)).c_str());
-	else if (exit_code)
-		throw std::exception(("Fully unknown exception. Exit code is: " + std::to_string(exit_code)).c_str());
-
-
-	// Close process and thread handles. 
-	CloseHandle(pi.hProcess);
-	CloseHandle(pi.hThread);
-
-
-	//***** Read amplitudes and headers from file
-	std::ifstream traceInput(traceFileName, std::ios::binary);
-	std::ifstream headerInput(headerFileName, std::ios::binary);
-
-	if (traceInput && headerInput)
-	{
-		try
-		{
-			sdataset = SDataset::fromFile(traceInput, headerInput);
-		}
-		catch (...)
-		{
-			traceInput.close();
-			headerInput.close();
-			throw;
-		}
-		traceInput.close();
-		headerInput.close();
-	}
-	else if (traceInput)
-		traceInput.close();
-	else if (headerInput)
-		headerInput.close();
-	else
-		cp.pLog->Log("FileRead: ", "Error", MessageType::Report);
-
-	//***** Flow SDataset
 	sdataset.toFlow(cp);
-
-	//***** Remove files
-	if (sfs::exists(traceFileName))
-		std::remove(traceFileName.c_str());
-	if (sfs::exists(headerFileName))
-		std::remove(headerFileName.c_str());
-	if (sfs::exists(headerNamesFileName))
-		std::remove(headerNamesFileName.c_str());
+	
+	sdataset.clearSwap();
 }
 
 void RunAppModule::logParameters () const
@@ -219,7 +103,8 @@ void RunAppModule::substituteReplicaInTemplatizedParameter(COMMON_PARAM &cp)
 	QString substituted_string;
 
 	ReplicaExpr::Validity substitution_status =
-		replica_substitutor.substitute("Application Name"_latin1, m_parameters.getApplicationName(), &substituted_string);
+		replica_substitutor.substitute("Application Name"_latin1, m_parameters.getApplicationName(),
+			&substituted_string);
 	if (substitution_status == ReplicaExpr::Validity::Invalid)
 		throw Util::Exception(tr("%1 replica variable substitution failed").arg(getTitle()));
 	else if (substitution_status == ReplicaExpr::Validity::Valid)
@@ -235,226 +120,215 @@ void RunAppModule::substituteReplicaInTemplatizedParameter(COMMON_PARAM &cp)
 		m_parameters.setApplicationParameters(substituted_string);
 }
 
-SDataset SDataset::fromFlow(COMMON_PARAM& cp, unsigned int traceCount, unsigned int sampleCount, unsigned int headerCount)
+Swap::Swap(sfs::path storageDir) :
+	_storageDir(storageDir.make_preferred()),
+	_tracesIO_fn((_storageDir / "traces").string()),
+	_headersIO_fn((_storageDir / "headers").string()),
+	_headerNamesO_fn((_storageDir / "headerNames.txt").string())
+{
+}
+
+void Swap::open_out() 
+{
+	_tracesOutput.open(_tracesIO_fn, std::ios::out | std::ios::binary);
+	_headersOutput.open(_headersIO_fn, std::ios::out | std::ios::binary);
+	_headerNamesOutput.open(_headerNamesO_fn, std::ios::out);
+}
+
+void Swap::close_out() 
+{
+	if (_tracesOutput.is_open())
+		_tracesOutput.close();
+	if (_headersOutput.is_open())
+		_headersOutput.close();
+	if (_headerNamesOutput.is_open())
+		_headerNamesOutput.close();
+}
+
+void Swap::open_in() 
+{
+	_tracesInput.open(_tracesIO_fn, std::ios::in | std::ios::binary);
+	_headersInput.open(_headersIO_fn, std::ios::in | std::ios::binary);
+}
+
+void Swap::close_in() 
+{
+	if (_tracesInput.is_open())
+		_tracesInput.close();
+	if (_headersInput.is_open())
+		_headersInput.close();
+}
+
+SDataset::SDataset(unsigned int traceCount, unsigned int sampleCount, unsigned int headerCount, sfs::path storage_dir)
+	: Swap(storage_dir),
+	_traceCount(traceCount),
+	_sampleCount(sampleCount),
+	_headerCount(headerCount),
+	_headerNames(std::vector<std::string>(_headerCount, "")),
+	_traces(std::vector<float>(_traceCount * _sampleCount, 0.0)),
+	_headers(std::vector<double>(_traceCount * _headerCount, 0.0))
+{
+}
+
+SDataset::SDataset(sfs::path storageDir)
+	: Swap(storageDir),
+	_traceCount(0),
+	_sampleCount(0),
+	_headerCount(0),
+	_headerNames(std::vector<std::string>(0, "")),
+	_traces(std::vector<float>(0, 0.0)),
+	_headers(std::vector<double>(0, 0.0))
+{
+}
+
+sfs::path SDataset::getcwd()
+{
+	return _storageDir;
+}
+
+SDataset SDataset::fromFlow(COMMON_PARAM& cp, unsigned int traceCount, unsigned int sampleCount,
+							unsigned int headerCount, sfs::path storageDir)
 {
 	SDataset sd = (traceCount == 0 && sampleCount == 0 && headerCount == 0)
-		? SDataset(cp.n_tr, cp.np, cp.nf)
-		: SDataset(traceCount, sampleCount, headerCount);
+		? SDataset(cp.n_tr, cp.np, cp.nf, storageDir)
+		: SDataset(traceCount, sampleCount, headerCount, storageDir);
 
-	if (sd.m_traces != nullptr && sd.m_headers != nullptr)
+	if (sd._traces.data() != nullptr && sd._headers.data() != nullptr)
 	{
-		for (unsigned int i = 0; i < sd.m_traceCount; i++)
+		for (unsigned int i = 0; i < sd._traceCount; i++)
 		{
-			memcpy(sd.m_traces + i * sd.m_sampleCount, cp.tr[i].d, sizeof(float) * sd.m_sampleCount);
-			for (unsigned int j = 0; j < sd.m_headerCount; j++)
-				sd.m_headers[i * sd.m_headerCount + j] = cp.getHeaderValue(j, i);
+			memcpy(sd._traces.data() + i * sd._sampleCount, cp.tr[i].d, sizeof(float) * sd._sampleCount);
+			for (unsigned int j = 0; j < sd._headerCount; j++)
+				sd._headers[i * sd._headerCount + j] = cp.getHeaderValue(j, i);
 		}
 
-		for (unsigned int i = 0; i < sd.m_headerCount; i++)
-			sd.m_headerNames[i] = std::string(reinterpret_cast<char*>(cp.de[i].name));
+		for (unsigned int i = 0; i < sd._headerCount; i++)
+			sd._headerNames[i] = std::string(reinterpret_cast<char*>(cp.de[i].name));
 
 	}
-	else if (sd.m_traces != nullptr)
-		for (unsigned int i = 0; i < sd.m_traceCount; i++)
-			memcpy(sd.m_traces + i * sd.m_sampleCount, cp.tr[i].d, sizeof(float) * sd.m_sampleCount);
-	else if (sd.m_headers != nullptr)
+	else if (sd._traces.data() != nullptr)
+		for (unsigned int i = 0; i < sd._traceCount; i++)
+			memcpy(sd._traces.data() + i * sd._sampleCount, cp.tr[i].d, sizeof(float) * sd._sampleCount);
+	else if (sd._headers.data() != nullptr)
 	{
-		for (unsigned int i = 0; i < sd.m_traceCount; i++)
-			for (unsigned int j = 0; j < sd.m_headerCount; j++)
-				sd.m_headers[i * sd.m_headerCount + j] = cp.getHeaderValue(j, i);
+		for (unsigned int i = 0; i < sd._traceCount; i++)
+			for (unsigned int j = 0; j < sd._headerCount; j++)
+				sd._headers[i * sd._headerCount + j] = cp.getHeaderValue(j, i);
 
-		for (unsigned int i = 0; i < sd.m_headerCount; i++)
-			sd.m_headerNames[i] = std::string(reinterpret_cast<char*>(cp.de[i].name));
+		for (unsigned int i = 0; i < sd._headerCount; i++)
+			sd._headerNames[i] = std::string(reinterpret_cast<char*>(cp.de[i].name));
 	}
 
 	return std::move(sd);
 }
 
-SDataset SDataset::fromFile(std::ifstream& traceInput, std::ifstream& headerInput)
+SDataset SDataset::fromFile(sfs::path storageDir)
 {
-	unsigned int traceCount1, traceCount2, sampleCount, headerCount;
-	traceInput.read(reinterpret_cast<char*>(&traceCount1), sizeof(int));
-	traceInput.read(reinterpret_cast<char*>(&sampleCount), sizeof(int));
-	headerInput.read(reinterpret_cast<char*>(&traceCount2), sizeof(int));
-	headerInput.read(reinterpret_cast<char*>(&headerCount), sizeof(int));
-
-	if (traceCount1 != traceCount2)
-		throw std::exception("Error - n_tr in header and trace files are different.");
-
-	SDataset sd = SDataset(traceCount1, sampleCount, headerCount);
-	if (sd.m_traces != nullptr)
-		traceInput.read(reinterpret_cast<char*>(sd.m_traces), sizeof(float) * traceCount1 * sampleCount);
-	if (sd.m_headers != nullptr)
-		headerInput.read(reinterpret_cast<char*>(sd.m_headers), sizeof(double) * traceCount1 * headerCount);
-
-	return std::move(sd);
-}
-
-// Default Constructor
-SDataset::SDataset(unsigned int traceCount, unsigned int sampleCount, unsigned int headerCount)
-	: m_traceCount(traceCount),
-	m_sampleCount(sampleCount),
-	m_headerCount(headerCount),
-	m_traces(nullptr),
-	m_headers(nullptr)
-{
-	try
+	SDataset sd(storageDir);
+	bool exception_caught = true;
+	if (!sd._storageDir.empty())
 	{
-		m_traces = SDataset::memoryAlloc<float>(static_cast<unsigned int>(traceCount * sampleCount));
-		m_headers = SDataset::memoryAlloc<double>(static_cast<unsigned int>(traceCount * headerCount));
-		std::string empty_str;
-		empty_str.reserve(65);
-		m_headerNames = std::vector<std::string>(headerCount, empty_str);
-	}
-	catch (...)
-	{
-		if (m_traces != nullptr)
-			delete[] m_traces;
-		if (m_headers != nullptr)
-			delete[] m_headers;
-		throw;
-	}
-}
+		try {
+			sd.open_in();
+			
+			unsigned int traceCount1, traceCount2, sampleCount, headerCount;
+			sd._tracesInput.read(reinterpret_cast<char*>(&traceCount1), sizeof(int));
+			sd._tracesInput.read(reinterpret_cast<char*>(&sampleCount), sizeof(int));
+			sd._headersInput.read(reinterpret_cast<char*>(&traceCount2), sizeof(int));
+			sd._headersInput.read(reinterpret_cast<char*>(&headerCount), sizeof(int));
 
-// Copy constructor
-SDataset::SDataset(const SDataset& other) : SDataset(other.m_traceCount, other.m_sampleCount, other.m_headerCount)
-{
-	if (m_traces != nullptr)
-		memcpy(m_traces, other.m_traces, sizeof(float) * m_traceCount * m_sampleCount);
-	if (m_headers != nullptr)
-		memcpy(m_headers, other.m_headers, sizeof(double) * m_traceCount * m_headerCount);
-	for (unsigned long i = 0; i < other.m_headerCount; i++)
-		m_headerNames[i] = other.m_headerNames[i];
-}
+			if (traceCount1 != traceCount2)
+				throw std::exception("Error - n_tr in header and trace files are different.");
+			sd.close_in();
 
-// Move constructor
-SDataset::SDataset(SDataset && other) noexcept 
-	: m_traceCount(other.m_traceCount),
-	m_sampleCount(other.m_sampleCount),
-	m_headerCount(other.m_headerCount),
-	m_headerNames(other.m_headerNames),
-	m_traces(other.m_traces),
-	m_headers(other.m_headers)
-{
-	other.m_traceCount = 0;
-	other.m_sampleCount = 0;
-	other.m_headerCount = 0;
-	other.m_headerNames = std::vector<std::string>();
-	other.m_traces = nullptr;
-	other.m_headers = nullptr;
-}
-
-// Copy assignment operator
-SDataset& SDataset::operator=(const SDataset& other)
-{
-	if (this != &other)
-	{
-		float *m_traces_tmpptr = m_traces;
-		double *m_headers_tmpptr = m_headers;
-		m_traces = nullptr;
-		m_headers = nullptr;
-		try
-		{
-			m_traces = SDataset::memoryAlloc<float>(other.m_traceCount * other.m_sampleCount);
-			m_headers = SDataset::memoryAlloc<double>(other.m_traceCount * other.m_headerCount);
+			sd = SDataset(traceCount1, sampleCount, headerCount, storageDir);
+			sd.open_in();
+			if (sd._traces.data() != nullptr)
+			{
+				sd._tracesInput.seekg(2 * sizeof(int), std::ios::beg);
+				sd._tracesInput.read(reinterpret_cast<char*>(sd._traces.data()),
+					sizeof(float) * traceCount1 * sampleCount);
+			}
+			if (sd._headers.data() != nullptr)
+			{
+				sd._headersInput.seekg(2 * sizeof(int), std::ios::beg);
+				sd._headersInput.read(reinterpret_cast<char*>(sd._headers.data()),
+					sizeof(double) * traceCount1 * headerCount);
+			}
+			
+			exception_caught = false;
 		}
 		catch (...)
 		{
-			if (m_traces != nullptr)
-				delete[] m_traces;
-			if (m_headers != nullptr)
-				delete[] m_headers;
-			m_traces = m_traces_tmpptr;
-			m_headers = m_headers_tmpptr;
+			sd.close_in();
 			throw;
 		}
-		if (m_traces != nullptr)
-			memcpy(m_traces, other.m_traces, sizeof(float) * other.m_traceCount * other.m_sampleCount);
-		if (m_headers != nullptr)
-			memcpy(m_headers, other.m_headers, sizeof(double) * other.m_traceCount * other.m_headerCount);
-		if (m_traces_tmpptr != nullptr)
-			delete[] m_traces_tmpptr;
-		if (m_headers_tmpptr != nullptr)
-			delete[] m_headers_tmpptr;
-		m_traceCount = other.m_traceCount;
-		m_sampleCount = other.m_sampleCount;
-		m_headerCount = other.m_headerCount;
-		m_headerNames = other.m_headerNames;
+		if (!exception_caught)
+			sd.close_in();
 	}
-	return *this;
+
+	return std::move(sd);
 }
 
-// Move assignment operator
-SDataset& SDataset::operator=(SDataset&& other) noexcept
+void SDataset::toFile()
 {
-	if (this != &other)
+	bool exception_caught = true;
+	try
 	{
-		if (m_traces != nullptr)
-			delete[] m_traces;
-		if (m_headers != nullptr)
-			delete[] m_headers;
+		open_out();
 
-		m_traceCount = other.m_traceCount;
-		m_sampleCount = other.m_sampleCount;
-		m_headerCount = other.m_headerCount;
-		m_headerNames = other.m_headerNames;
-		m_traces = other.m_traces;
-		m_headers = other.m_headers;
+		_tracesOutput.write(reinterpret_cast<char*>(&_traceCount), sizeof(_traceCount));
+		_tracesOutput.write(reinterpret_cast<char*>(&_sampleCount), sizeof(_sampleCount));
+		_tracesOutput.write(reinterpret_cast<char*>(_traces.data()), sizeof(float) * _traces.size());
 
-		other.m_traceCount = 0;
-		other.m_sampleCount = 0;
-		other.m_headerCount = 0;
-		other.m_headerNames = std::vector<std::string>();
-		other.m_traces = nullptr;
-		other.m_headers = nullptr;
+		_headersOutput.write(reinterpret_cast<char*>(&_traceCount), sizeof(_traceCount));
+		_headersOutput.write(reinterpret_cast<char*>(&_headerCount), sizeof(_headerCount));
+		_headersOutput.write(reinterpret_cast<char*>(_headers.data()), sizeof(double) * _headers.size());
+
+		for (unsigned long i = 0; i < _headerCount; i++)
+			_headerNamesOutput << _headerNames[i].c_str() << std::endl;
+		exception_caught = false;
 	}
-	return *this;
-}
-
-// Destructor
-SDataset::~SDataset()
-{
-	if (m_traces != nullptr)
-		delete[] m_traces;
-	if (m_headers != nullptr)
-		delete[] m_headers;
-}
-
-void SDataset::toFile(std::ofstream& traceOutput, std::ofstream& headerOutput,
-	std::ofstream& headerNamesOutput)
-{
-	traceOutput.write(reinterpret_cast<char*>(&m_traceCount), sizeof(m_traceCount));
-	traceOutput.write(reinterpret_cast<char*>(&m_sampleCount), sizeof(m_sampleCount));
-	traceOutput.write(reinterpret_cast<char*>(m_traces), sizeof(float) * m_traceCount * m_sampleCount);
-
-	headerOutput.write(reinterpret_cast<char*>(&m_traceCount), sizeof(m_traceCount));
-	headerOutput.write(reinterpret_cast<char*>(&m_headerCount), sizeof(m_headerCount));
-	headerOutput.write(reinterpret_cast<char*>(m_headers), sizeof(double) * m_traceCount * m_headerCount);
-
-	for (unsigned long i = 0; i < m_headerCount; i++)
-		headerNamesOutput << m_headerNames[i].c_str() << std::endl;
+	catch (...)
+	{
+		close_out();
+		throw;
+	}
+	if (!exception_caught)
+		close_out();
 }
 
 void SDataset::toFlow(COMMON_PARAM &cp)
 {
 	auto stream_id = cp.CreateDataOutput(&cp, DO_SINGLE | DO_NEW, 0);
-	cp.np = m_sampleCount;
+	cp.np = _sampleCount;
 
 	OUTTRACE tr;
 	tr.np = cp.np;
-	for (unsigned int i = 0; i < m_traceCount; i++)
+	for (unsigned int i = 0; i < _traceCount; i++)
 	{
-		tr.d = m_traces + i * m_sampleCount;
-		tr.h = m_headers + i * m_headerCount;
+		tr.d = _traces.data() + i * _sampleCount;
+		tr.h = _headers.data() + i * _headerCount;
 		cp.TraceOutput(stream_id, &tr);
 	}
+}
+
+void SDataset::clearSwap() 
+{
+	if (sfs::exists(_tracesIO_fn))
+		std::remove(_tracesIO_fn.c_str());
+	if (sfs::exists(_headersIO_fn))
+		std::remove(_headersIO_fn.c_str());
+	if (sfs::exists(_headerNamesO_fn))
+		std::remove(_headerNamesO_fn.c_str());
 }
 
 ParametersString::ParametersString(const QString& text) : QString(text)
 {
 }
 
-QString ParametersString::format() {
+QString ParametersString::format() 
+{
 	QRegExp regex("(\\s|^)-{2}([A-Za-z_]+\\w*)\\s*=\\s*((\\{@\\w+\\})|(\\w+))(\\s|$)");
 	QRegExp whitespace("\\s");
 	QRegExp equal("\\s*=\\s*");
@@ -485,7 +359,6 @@ QString ParametersString::format() {
 			}
 		}
 		formatedStr += " " + tmp.mid(p, q - p + 1).replace(equal,"=");
-		//formatedStr += " " + this->mid(index, length).replace(whitespace, "");
 		if (whitespace.exactMatch(*(this->begin() + index + length - 1)))
 			index--;
 		index = regex.indexIn(*this, index + length);
