@@ -5,8 +5,8 @@ AppProcess::AppProcess(const sfs::path& wd, const sfs::path& application,
 	_application(QProcess(this)),
 	_listening(false)
 {
-	_application.setWorkingDirectory(QString(wd.string().c_str()));
-	_application.setProgram(QString(application.string().c_str()));
+	_application.setWorkingDirectory(QString::fromStdWString(wd.wstring()));
+	_application.setProgram(QString::fromStdWString(application.wstring()));
 	_application.setArguments(QStringList() << parameters);
 	_application.setReadChannelMode(QProcess::SeparateChannels);
 	//_application.setCurrentReadChannel(QProcess::StandardOutput);

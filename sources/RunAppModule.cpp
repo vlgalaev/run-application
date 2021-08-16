@@ -74,7 +74,8 @@ void RunAppModule::processFrame(COMMON_PARAM &cp)
 	SDataset sdataset = SDataset::fromFlow(cp);
 	sdataset.toFile();
 
-	AppProcess application = AppProcess(sdataset.getcwd(), applicationName, parameters);
+	AppProcess application = AppProcess(sdataset.getcwd().make_preferred(),
+		applicationName.make_preferred(), parameters);
 	QObject::connect(&application, &AppProcess::report, [&cp](const QString& message) {
 		cp.pLog->Log("Application Report", message.toStdString().c_str());
 	});

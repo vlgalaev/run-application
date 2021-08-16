@@ -203,7 +203,7 @@
         <number>1</number>
        </property>
        <property name="text">
-        <string>&lt;a href=&quot;https://github.com/vlgalaev&quot;&gt;GitHub repo&lt;/a&gt;</string>
+        <string>&lt;a href=&quot;https://github.com/vlgalaev/run-application&quot;&gt;GitHub repo&lt;/a&gt;</string>
        </property>
        <property name="textFormat">
         <enum>Qt::RichText</enum>
