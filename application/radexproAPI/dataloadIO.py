@@ -90,7 +90,7 @@ def get_header_id(headerName, header_names=None):
 
 def get_arguments(arguments=sys.argv[-1]):
     params = {}
-    pattern = r"-{2}([A-Za-z_]+\w*)\s*=\s*(\w+)"
+    pattern = r"-{2}([A-Za-z_]+\w*)\s*=\s*(\S+)"
     for arg in arguments.split(' '):
         match = re.fullmatch(pattern, arg.strip())
         if match is not None:

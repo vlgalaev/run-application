@@ -90,7 +90,7 @@ void RunAppParametersDialog::editApplicationParameters()
 
 QRegexHighligher::QRegexHighligher(QObject *parent) : QSyntaxHighlighter(parent)
 {
-	_regex = QRegExp("(\\s|^)-{2}([A-Za-z_]+\\w*)\\s*=\\s*((\\{@\\w+\\})|(\\w+))(\\s|$)");
+	_regex = QRegExp("(\\s|^)-{2}([A-Za-z_]+\\w*)\\s*=\\s*((\\{@\\w+\\})|(\\S+))(\\s|$)");
 	_format = QTextCharFormat();
 	_format.setForeground(QColor(0,127,76,204));
 	_format.setFontWeight(QFont::Bold);

@@ -68,7 +68,7 @@ void RunAppModule::processFrame(COMMON_PARAM &cp)
 	dataset_mask_processor.processString("*", &dataset_list);
 	file_mask_processor.processString("*.*", &files_list);
 
-	sfs::path applicationName(m_parameters.getApplicationName().toStdString());
+	sfs::path applicationName(m_parameters.getApplicationName().toStdWString());
 	ParametersString parameters = ParametersString(m_parameters.getApplicationParameters()).format();
 
 	SDataset sdataset = SDataset::fromFlow(cp);
@@ -330,7 +330,7 @@ ParametersString::ParametersString(const QString& text) : QString(text)
 
 QString ParametersString::format() 
 {
-	QRegExp regex("(\\s|^)-{2}([A-Za-z_]+\\w*)\\s*=\\s*((\\{@\\w+\\})|(\\w+))(\\s|$)");
+	QRegExp regex("(\\s|^)-{2}([A-Za-z_]+\\w*)\\s*=\\s*((\\{@\\w+\\})|(\\S+))(\\s|$)");
 	QRegExp whitespace("\\s");
 	QRegExp equal("\\s*=\\s*");
 
