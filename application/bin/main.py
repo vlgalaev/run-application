@@ -1,21 +1,24 @@
-from radexproAPI.dataloadIO import (load_traces, load_headers, load_header_names, get_header_id, get_arguments,
-    save_traces, save_headers, ParallelPrint, _print)
 import numpy as np
+from time import sleep
 import sys
 
-with ParallelPrint() as p:
+import radexproAPI.dataloadIO as rdx
+with rdx.ParallelPrint() as p:
     argv = sys.argv
-    traces = load_traces()
-    headers = load_headers()
-    headerNames = load_header_names()
-    parameters = get_arguments(argv[-1])
-    _print("Data from RDX has received")
+    traces = rdx.load_traces()
+    headers = rdx.load_headers()
+    headerNames = rdx.load_header_names()
+    parameters = rdx.get_arguments(argv[-1])
+    p.report("Data from RDX has received")
 
     traces *= 3.14
-    headers[:,get_header_id("AAXFILT", headerNames)] *= 3
-    _print("The computation has done")
-
-    save_traces(traces)
-    save_headers(headers)
-    _print("Data has sent to RDX")
+    headers[:,rdx.get_header_id("AAXFILT", headerNames)] *= 3
+    p.report("The computation has done")
+    
+    for i in range(0,100,10):
+        p.depictWorkPercent(i)
+    
+    rdx.save_traces(traces)
+    rdx.save_headers(headers)
+    p.report("Data has sent to RDX")
 

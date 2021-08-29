@@ -1,5 +1,6 @@
 from threading import Thread
 from traceback import print_tb
+from functools import wraps
 from time import sleep
 from queue import Queue
 import struct
@@ -17,7 +18,7 @@ def consumer(q):
             if data[0] == () and data[1] == {}:
                 break
             if data[1].get('file') is None or data[1]['file'] == sys.stdout:
-                sleep(1)
+                sleep(0.5)
                 data[1]['flush'] = True
                 print(*data[0], **data[1])
             else:
@@ -28,33 +29,40 @@ def parallel(func):
     q = Queue()
     thr = Thread(target=consumer, args=(q,))
     thr.start()
-
-    def wrapper(*args, **kwargs):
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
         if kwargs.get('flush') is None:
             pass
         else:
             del kwargs['flush']
         q.put((args, kwargs))
+        return func(self, *args, **kwargs)
 
     return wrapper
 
-@parallel
-def _print(*args, **kwargs):
-    pass
+
 
 class ParallelPrint:
     def __init__(self):
         pass
                     
     def __enter__(self):
-        pass
+        return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type:
             print_tb(exc_tb)
             print(f"{exc_type.__name__} : {exc_val}", file=sys.stderr)
-        _print()
+        self.report()
         return True
+        
+    @parallel
+    def report(self, *args, **kwargs):
+        pass
+        
+    def depictWorkPercent(self, percent=None):
+        if percent is not None:
+            self.report(f"!?$#*DepictWorkPercent:{percent}*#$?!")
 
 def load_traces(filename='traces'):
     with open(filename, 'rb') as file:

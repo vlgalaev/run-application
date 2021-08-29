@@ -2,6 +2,7 @@
 #include <qprocess.h>
 #include <qthread.h>
 #include <qstringlist.h>
+#include <qregexp.h>
 
 #include <filesystem>
 
@@ -25,6 +26,7 @@ public:
 signals:
 	void report(const QString& message);
 	void stdError(const QString& message);
+	void depictWorkPercent(const int& percent);
 
 private slots:
 	void errorOccured(const QProcess::ProcessError& error);
@@ -34,6 +36,7 @@ private slots:
 
 private:
 	bool _listening;
+	QRegExp _regexWorkPercent = QRegExp("!\\?\\$#\\*DepictWorkPercent:(.+)\\*#\\$\\?!");
 	QProcess _application;
 
 };

@@ -83,6 +83,10 @@ void RunAppModule::processFrame(COMMON_PARAM &cp)
 		if (!message.isEmpty())
 			cp.pLog->Log("Application Errors", message.toStdString().c_str());
 	});
+	QObject::connect(&application, &AppProcess::depictWorkPercent, [&cp](const int& percent) {
+		if (percent >= 0 && percent <= 100)
+			cp.depictWorkPercent(percent);
+	});
 	application.startApp();
 	
 	sdataset = SDataset::fromFile();

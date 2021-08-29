@@ -66,7 +66,11 @@ void AppProcess::errorOccured(const QProcess::ProcessError& error)
 void AppProcess::readyReadStandardOutput() 
 {
 	if (!_listening) return;
-	emit report(_application.readAllStandardOutput().trimmed());
+	QString message = _application.readAllStandardOutput().trimmed();
+	if (_regexWorkPercent.indexIn(message) != -1)
+		emit depictWorkPercent(_regexWorkPercent.cap(1).toInt());
+	else
+		emit report(message);
 }
 
 void AppProcess::stateChanged(const QProcess::ProcessState& newState) 
