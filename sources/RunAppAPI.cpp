@@ -211,7 +211,14 @@ unsigned long RDX_MODULE_CALL runRunApp (COMMON_PARAM *p_cp, const char *p_packe
 			module_ptr->logParameters();
 		}
 		
-		module_ptr->processFrame(*p_cp);
+		try
+		{
+			module_ptr->processFrame(*p_cp);
+		}
+		catch (Util::UserInterruptException &)
+		{
+			module_ptr->stop();
+		}
 		p_cp->pushModulePreservedDataPtr(std::move(module_ptr));
 
 		result = MP_OK;
