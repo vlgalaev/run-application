@@ -1,16 +1,13 @@
-#Ignore any folder except [application, debug, forms, headers, sources]
+#Ignore any folder except [application, forms, headers, sources]
 /**/
 !/application/
-!/debug/
 !/forms/
 !/headers/
-!/release/
 !/sources/
 !/doc/
 /**.*
 !/*.def
 !/*.pro
-!/*.vcxproj
 !/README.md
 !.gitignore
 
@@ -24,12 +21,6 @@
 !/application/install.bat
 !/application/install_dev.bat
 !/application/README.md
-
-#Ignore any in ./debug/ and ./release/
-/debug/**/
-/debug/**.*
-/release/**/
-/release/**.*
 
 #Ignore any in /froms/ except *.ui
 /forms/**/

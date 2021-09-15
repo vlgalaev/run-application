@@ -8,7 +8,7 @@ REM setting up the venv and installing the dependencies
 python -m pip install -U pip
 IF NOT EXIST .\venv\Lib\site-packages\PyInstaller\__init__.py pip install pyinstaller
 
-IF NOT EXIST .\venv\Lib\site-packages\numpy\__init__.pypip install numpy
+IF NOT EXIST .\venv\Lib\site-packages\numpy\__init__.py pip install numpy
 REM TODO: install dependencies
 
 REM setting up environment variables locally

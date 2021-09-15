@@ -65,13 +65,15 @@ public:
 
 	//! @brief Processes a frame of data
 	void processFrame (COMMON_PARAM &cp);
+	void stop() { _app->stopApp(); }
 
 private:
 	void substituteReplicaInTemplatizedParameter(COMMON_PARAM &cp);
 
 private:
 	RunAppParameters m_parameters;
-
+	std::unique_ptr<SDataset> _sd;
+	std::unique_ptr<AppProcess> _app;
 };
 
 class SDataset : public Swap

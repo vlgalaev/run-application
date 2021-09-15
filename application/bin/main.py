@@ -13,9 +13,11 @@ with rdx.ParallelPrint() as p:
 
     traces *= 3.14
     headers[:,rdx.get_header_id("AAXFILT", headerNames)] *= 3
+    headers[:,rdx.get_header_id("dt", headerNames)] *= 2
     p.report("The computation has done")
     
     for i in range(0,100,10):
+        sleep(3)
         p.depictWorkPercent(i)
     
     rdx.save_traces(traces)

@@ -52,6 +52,25 @@ RunAppModule::RunAppModule (COMMON_PARAM &first_frame_cp, const RunAppParameters
 	
 	this->substituteReplicaInTemplatizedParameter(first_frame_cp);
 	// do smth
+
+
+	sfs::path applicationName(m_parameters.getApplicationName().toStdWString());
+	ParametersString p = ParametersString(m_parameters.getApplicationParameters()).format();
+	_sd = std::make_unique<SDataset>(SDataset::fromFlow(first_frame_cp));
+	_app = std::make_unique<AppProcess>(_sd->getcwd().make_preferred(),
+		applicationName.make_preferred(), p);
+	QObject::connect(_app.get(), &AppProcess::report, [&first_frame_cp](const QString& message) {
+		first_frame_cp.pLog->Log("Application Report", message.toStdString().c_str());
+	});
+	QObject::connect(_app.get(), &AppProcess::stdError, [&first_frame_cp](const QString& message) {
+		if (!message.isEmpty())
+			first_frame_cp.pLog->Log("Application Errors", message.toStdString().c_str());
+	});
+	QObject::connect(_app.get(), &AppProcess::depictWorkPercent, [&first_frame_cp](const int& percent) {
+		if (percent >= 0 && percent <= 100)
+			first_frame_cp.depictWorkPercent(percent);
+	});
+
 }
 
 void RunAppModule::processFrame(COMMON_PARAM &cp)
@@ -68,32 +87,16 @@ void RunAppModule::processFrame(COMMON_PARAM &cp)
 	dataset_mask_processor.processString("*", &dataset_list);
 	file_mask_processor.processString("*.*", &files_list);
 
-	sfs::path applicationName(m_parameters.getApplicationName().toStdWString());
-	ParametersString parameters = ParametersString(m_parameters.getApplicationParameters()).format();
 
-	SDataset sdataset = SDataset::fromFlow(cp);
-	sdataset.toFile();
-
-	AppProcess application = AppProcess(sdataset.getcwd().make_preferred(),
-		applicationName.make_preferred(), parameters);
-	QObject::connect(&application, &AppProcess::report, [&cp](const QString& message) {
-		cp.pLog->Log("Application Report", message.toStdString().c_str());
-	});
-	QObject::connect(&application, &AppProcess::stdError, [&cp](const QString& message) {
-		if (!message.isEmpty())
-			cp.pLog->Log("Application Errors", message.toStdString().c_str());
-	});
-	QObject::connect(&application, &AppProcess::depictWorkPercent, [&cp](const int& percent) {
-		if (percent >= 0 && percent <= 100)
-			cp.depictWorkPercent(percent);
-	});
-	application.startApp();
+	_sd->toFile();
 	
-	sdataset = SDataset::fromFile();
+	_app->startApp();
 
-	sdataset.toFlow(cp);
-	
-	sdataset.clearSwap();
+	_sd = std::make_unique<SDataset>(SDataset::fromFile());
+
+	_sd->toFlow(cp);
+
+	_sd->clearSwap();
 }
 
 void RunAppModule::logParameters () const
@@ -305,9 +308,14 @@ void SDataset::toFile()
 
 void SDataset::toFlow(COMMON_PARAM &cp)
 {
-	auto stream_id = cp.CreateDataOutput(&cp, DO_SINGLE | DO_NEW, 0);
+	int dt_index = cp.getHeaderIndex("dt");
 	cp.np = _sampleCount;
-
+	cp.dt = _headers[dt_index];
+	cp.dx = 1;
+	cp.nsf_ind = 0;
+	cp.n_tr = _traceCount;
+	auto stream_id = cp.CreateDataOutput(&cp, DO_SINGLE | DO_NEW, 0);
+	
 	OUTTRACE tr;
 	tr.np = cp.np;
 	for (unsigned int i = 0; i < _traceCount; i++)
