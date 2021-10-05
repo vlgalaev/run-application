@@ -87,7 +87,6 @@ void RunAppModule::processFrame(COMMON_PARAM &cp)
 	dataset_mask_processor.processString("*", &dataset_list);
 	file_mask_processor.processString("*.*", &files_list);
 
-
 	_sd->toFile();
 	
 	_app->startApp();
@@ -210,8 +209,8 @@ SDataset SDataset::fromFlow(COMMON_PARAM& cp, unsigned int traceCount, unsigned 
 				sd._headers[i * sd._headerCount + j] = cp.getHeaderValue(j, i);
 		}
 
-		for (unsigned int i = 0; i < sd._headerCount; i++)
-			sd._headerNames[i] = std::string(reinterpret_cast<char*>(cp.de[i].name));
+		//for (unsigned int i = 0; i < sd._headerCount; i++)
+			//sd._headerNames[i] = std::string(reinterpret_cast<char*>(cp.de[i].name));
 
 	}
 	else if (sd._traces.data() != nullptr)
@@ -223,10 +222,11 @@ SDataset SDataset::fromFlow(COMMON_PARAM& cp, unsigned int traceCount, unsigned 
 			for (unsigned int j = 0; j < sd._headerCount; j++)
 				sd._headers[i * sd._headerCount + j] = cp.getHeaderValue(j, i);
 
-		for (unsigned int i = 0; i < sd._headerCount; i++)
-			sd._headerNames[i] = std::string(reinterpret_cast<char*>(cp.de[i].name));
+		//for (unsigned int i = 0; i < sd._headerCount; i++)
+			//sd._headerNames[i] = std::string(reinterpret_cast<char*>(cp.de[i].name));
 	}
-
+	for (unsigned int i = 0; i < sd._headerCount; i++)
+		sd._headerNames[i] = std::string(reinterpret_cast<char*>(cp.de[i].name));
 	return std::move(sd);
 }
 
