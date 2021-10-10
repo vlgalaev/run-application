@@ -189,13 +189,9 @@ unsigned long RDX_MODULE_CALL runRunApp (COMMON_PARAM *p_cp, const char *p_packe
 {
 	ASSERT_NOTNULL(p_cp, p_packed_parameters);
 
-	MODULE_CHECK_CONFIGURATION(p_cp->dwConfiguration);
-
 	unsigned long result = MP_FATALERR;
 	try
 	{
-		MODULE_VERIFY_CONFIGURATION(p_cp->dwConfiguration);
-
 		const std::unique_ptr<RunAppParameters> parameters_ptr =
 			::unpackModuleParameters<RunAppParameters>(p_packed_parameters, PARAMBUFSIZE);
 		ASSERT_NOTNULL(parameters_ptr);
@@ -242,7 +238,7 @@ unsigned long RDX_MODULE_CALL runRunApp (COMMON_PARAM *p_cp, const char *p_packe
 	return result;
 }
 
-void RDX_MODULE_CALL SignalTerminating (COMMON_PARAM *p_cp, void *p_packed_parameters, ULONG termination_code)
+unsigned long RDX_MODULE_CALL SignalTerminating (COMMON_PARAM *p_cp, void *p_packed_parameters, ULONG termination_code)
 {
 	ASSERT_NOTNULL(p_cp);
 	Q_UNUSED(p_packed_parameters);
@@ -252,6 +248,7 @@ void RDX_MODULE_CALL SignalTerminating (COMMON_PARAM *p_cp, void *p_packed_param
 	if (termination_code == MP_OK)
 		IReLog::logModuleResult<RunAppModule>(termination_code, p_cp->pLog);
 
+	return termination_code;
 }
 
 int RDX_MODULE_CALL isModuleTemplatized (const char *p_packed_parameters)

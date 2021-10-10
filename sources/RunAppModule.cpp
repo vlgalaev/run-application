@@ -67,8 +67,6 @@ RunAppModule::RunAppModule (COMMON_PARAM &first_frame_cp, const RunAppParameters
 
 void RunAppModule::processFrame(COMMON_PARAM &cp)
 {
-	MODULE_VERIFY_CONFIGURATION(cp.dwConfiguration);
-
 	QStringList files_list;
 	QStringList dataset_list;
 
