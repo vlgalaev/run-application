@@ -4,7 +4,7 @@
 #include "RdxModuleDefault.h"
 
 unsigned long RDX_MODULE_CALL             runRunApp (COMMON_PARAM *p_cp, const char *p_packed_parameters);
-void          RDX_MODULE_CALL              ExtraParameters (EXTRA_PARAM *p_extra_parameters);
+void          RDX_MODULE_CALL             ExtraParameters (EXTRA_PARAM *p_extra_parameters);
 int           RDX_MODULE_CALL             editParameters (void *p_parent_window, int *p_packed_parameters_size_in_bytes,
 															void *p_packed_parameters);
 void          RDX_MODULE_CALL             GetParamPathList (std::vector<std::string> *p_encoded_paths,

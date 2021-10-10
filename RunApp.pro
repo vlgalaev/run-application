@@ -1,7 +1,7 @@
 MODULE_TITLE = "Run Application"
 GROUP = "Custom Modules"
 MAIN_FUNC_NAME = "runRunApp"
-#MODULE_TITLE_SUFFIX_ADDER = getSuffix
+MODULE_TITLE_SUFFIX_ADDER = getSuffix
 
 include(../../COMMON/Module.pri)
 #include($${RADEX_SRC_DIR}COMMON/BoostSupport.pri)

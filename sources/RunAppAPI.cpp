@@ -176,9 +176,9 @@ char* RDX_MODULE_CALL getSuffix (int packed_parameters_size_in_bytes, void *p_pa
 		::unpackModuleParameters<RunAppParameters>(p_packed_parameters, packed_parameters_size_in_bytes);
 	ASSERT_NOTNULL(parameters_ptr);
 
-	QString suffix_string; // = QLatin1String(" <- "); //- when input parameters are more important to display
+	QString suffix_string = QLatin1String(" <- "); //- when input parameters are more important to display
 						   // = QLatin1String(" -> "); - when output parameters are more important to display
-	//suffix_string += <Important parameter string>
+	suffix_string += parameters_ptr->getApplicationName();
 
 	std::strncpy(suffix_holder, qUtf8Printable(suffix_string), std::size(suffix_holder) - 1);
 
@@ -251,14 +251,13 @@ void RDX_MODULE_CALL SignalTerminating (COMMON_PARAM *p_cp, void *p_packed_param
 
 	if (termination_code == MP_OK)
 		IReLog::logModuleResult<RunAppModule>(termination_code, p_cp->pLog);
+
 }
 
 int RDX_MODULE_CALL isModuleTemplatized (const char *p_packed_parameters)
 {
 	auto parameters_ptr = unpackModuleParameters<RunAppParameters>(p_packed_parameters, PARAMBUFSIZE);
-	ASSERT_NOTNULL(parameters_ptr);
-
-	
+	ASSERT_NOTNULL(parameters_ptr);	
 
 	bool isTemplatized = false;
 	if (ReplicaExpr::checkIfExprListHasVariable({ parameters_ptr->getApplicationName() }) |

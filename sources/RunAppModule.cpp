@@ -13,20 +13,12 @@
 #include <qprocess.h>
 
 #include <fstream>
-#include <exception>
 #include <filesystem>
 
 #include "AppProcess.h"
 
 
 namespace sfs = std::filesystem;
-
-class RunAppException : std::exception
-{
-private:
-	int err_code;
-public:
-};
 
 QString RunAppModule::getTitle ()
 {
