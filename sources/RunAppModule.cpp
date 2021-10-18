@@ -56,7 +56,10 @@ RunAppModule::RunAppModule (COMMON_PARAM &first_frame_cp, const RunAppParameters
 	});
 	QObject::connect(_app.get(), &AppProcess::stdError, [&first_frame_cp](const QString& message) {
 		if (!message.isEmpty())
+		{
 			first_frame_cp.pLog->Log("Application Errors", message.toStdString().c_str());
+			throw std::exception("There is an error in the application.");
+		}
 	});
 	QObject::connect(_app.get(), &AppProcess::depictWorkPercent, [&first_frame_cp](const int& percent) {
 		if (percent >= 0 && percent <= 100)
