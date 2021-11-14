@@ -11,14 +11,8 @@ pip install pyinstaller
 pip install numpy
 REM TODO: install dependencies
 
-REM setting up environment variables locally
-setlocal
-PYTHONPATH = .\bin;.\radexproAPI
-REM TODO: add new catalogs if it is needed
-endlocal
-
 REM compile the application
-pyinstaller --onefile .\bin\main.py
+pyinstaller --onefile .\bin\main.py -p .\radexproAPI
 
 REM deactivate the venv
 CALL .\venv\Scripts\deactivate.bat
