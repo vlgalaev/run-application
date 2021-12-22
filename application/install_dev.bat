@@ -6,13 +6,15 @@ CALL .\venv\Scripts\activate.bat
 
 REM setting up the venv and installing the dependencies
 python -m pip install -U pip
-IF NOT EXIST .\venv\Lib\site-packages\PyInstaller\__init__.py pip install pyinstaller
+pip install -U pyinstaller
 
-IF NOT EXIST .\venv\Lib\site-packages\numpy\__init__.py pip install numpy
+pip install -U numpy
 REM TODO: install dependencies
 
+set PYTHONPATH=.\bin;.\radexproAPI
+
 REM compile the application
-pyinstaller --onefile .\bin\main.py -p .\radexproAPI
+pyinstaller --onefile .\bin\main.py
 
 REM deactivate the venv
 CALL .\venv\Scripts\deactivate.bat

@@ -210,14 +210,15 @@ unsigned long RDX_MODULE_CALL runRunApp (COMMON_PARAM *p_cp, const char *p_packe
 		try
 		{
 			module_ptr->processFrame(*p_cp);
+			p_cp->pushModulePreservedDataPtr(std::move(module_ptr));
+			result = MP_OK;
 		}
 		catch (Util::UserInterruptException &)
 		{
 			module_ptr->stop();
+			p_cp->pLog->Log("by User", "The flow has interrupted", MessageType::Report);
+			result = MP_TERMINATED;
 		}
-		p_cp->pushModulePreservedDataPtr(std::move(module_ptr));
-
-		result = MP_OK;
 
 	}
 	catch (Util::UserInterruptException &)

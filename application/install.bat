@@ -11,8 +11,10 @@ pip install pyinstaller
 pip install numpy
 REM TODO: install dependencies
 
+set PYTHONPATH=.\bin;.\radexproAPI
+
 REM compile the application
-pyinstaller --onefile .\bin\main.py -p .\radexproAPI
+pyinstaller --onefile .\bin\main.py
 
 REM deactivate the venv
 CALL .\venv\Scripts\deactivate.bat
